@@ -13,7 +13,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    private EditText emailEditText, passwordEditText;
+    private EditText emailEditText, passwordEditText, confirmPasswordEditText, phoneNumberEditText;
     private Button registerButton, backToLoginButton;
     private FirebaseAuth mAuth;
 
@@ -26,6 +26,8 @@ public class RegisterActivity extends AppCompatActivity {
 
         emailEditText = findViewById(R.id.editTextEmail);
         passwordEditText = findViewById(R.id.editTextPassword);
+        confirmPasswordEditText = findViewById(R.id.editTextConfirmPassword);
+        phoneNumberEditText = findViewById(R.id.editTextPhoneNumber);
         registerButton = findViewById(R.id.buttonRegister);
         backToLoginButton = findViewById(R.id.buttonBackToLogin);
 
@@ -38,14 +40,21 @@ public class RegisterActivity extends AppCompatActivity {
     private void registerUser() {
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
+        String confirmPassword = confirmPasswordEditText.getText().toString().trim();
+        String phoneNumber = phoneNumberEditText.getText().toString().trim();
 
-        if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
+        if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password) || TextUtils.isEmpty(confirmPassword) || TextUtils.isEmpty(phoneNumber)) {
             Toast.makeText(this, "Minden mezőt ki kell tölteni!", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (password.length() < 6) {
             Toast.makeText(this, "A jelszónak legalább 6 karakteresnek kell lennie!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            Toast.makeText(this, "A jelszavak nem egyeznek!", Toast.LENGTH_SHORT).show();
             return;
         }
 
