@@ -10,12 +10,16 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
 public class RegisterActivity extends AppCompatActivity {
 
     private EditText emailEditText, passwordEditText, confirmPasswordEditText, phoneNumberEditText;
     private Button registerButton, backToLoginButton;
     private FirebaseAuth mAuth;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,11 +35,24 @@ public class RegisterActivity extends AppCompatActivity {
         registerButton = findViewById(R.id.buttonRegister);
         backToLoginButton = findViewById(R.id.buttonBackToLogin);
 
+        Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+        Animation slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up);
+
+        emailEditText.startAnimation(slideUp);
+        passwordEditText.startAnimation(slideUp);
+        confirmPasswordEditText.startAnimation(slideUp);
+        phoneNumberEditText.startAnimation(slideUp);
+        registerButton.startAnimation(fadeIn);
+        backToLoginButton.startAnimation(fadeIn);
+
         registerButton.setOnClickListener(v -> registerUser());
-        backToLoginButton.setOnClickListener(v ->
-                startActivity(new Intent(RegisterActivity.this, LoginActivity.class))
-        );
+        backToLoginButton.setOnClickListener(v -> {
+            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+            startActivity(intent);
+            overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
+        });
     }
+
 
     private void registerUser() {
         String email = emailEditText.getText().toString().trim();
