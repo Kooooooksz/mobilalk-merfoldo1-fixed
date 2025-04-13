@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1021460479032",
+    "project_id": "android-video-sharing",
+    "storage_bucket": "android-video-sharing.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1021460479032:android:95cca4a041b2f3c5197acd",
+        "android_client_info": {
+          "package_name": "com.example.videosharinggood"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByEzJRK5iTqkt2t_vXx1BUhtmiz1fP8mw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
