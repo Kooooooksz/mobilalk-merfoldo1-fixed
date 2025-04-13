@@ -55,6 +55,15 @@ public class MainActivity extends AppCompatActivity {
         } else {
             textViewHello.setText("Nem vagy bejelentkezve.");
             profileItem.setTitle("Bejelentkezés");
+            profileItem.setOnMenuItemClickListener(menuItem -> {
+                String title = menuItem.getTitle().toString();
+                switch (title) {
+                    case "Bejelentkezés":
+                        startActivity(new Intent(this, LoginActivity.class));
+                        return true;
+                }
+                return false;
+            });
         }
 
         buttonGoToRegister.setOnClickListener(v -> {
@@ -84,8 +93,6 @@ public class MainActivity extends AppCompatActivity {
         if (user != null) {
             popupMenu.getMenu().add("Profil");
             popupMenu.getMenu().add("Kijelentkezés");
-        } else {
-            popupMenu.getMenu().add("Bejelentkezés");
         }
 
         popupMenu.setOnMenuItemClickListener(menuItem -> {
