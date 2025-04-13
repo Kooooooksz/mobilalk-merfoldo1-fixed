@@ -9,17 +9,18 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.videosharinggood.models.User;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    private EditText emailEditText, passwordEditText, confirmPasswordEditText, phoneNumberEditText;
+    private EditText usernameEditText, emailEditText, passwordEditText, confirmPasswordEditText, phoneNumberEditText;
     private Button registerButton, backToLoginButton;
     private FirebaseAuth mAuth;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +29,8 @@ public class RegisterActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
 
+        // Minden EditText mező hozzáadása
+        usernameEditText = findViewById(R.id.editTextUsername);
         emailEditText = findViewById(R.id.editTextEmail);
         passwordEditText = findViewById(R.id.editTextPassword);
         confirmPasswordEditText = findViewById(R.id.editTextConfirmPassword);
@@ -35,9 +38,11 @@ public class RegisterActivity extends AppCompatActivity {
         registerButton = findViewById(R.id.buttonRegister);
         backToLoginButton = findViewById(R.id.buttonBackToLogin);
 
+        // Animációk betöltése
         Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
         Animation slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up);
 
+        usernameEditText.startAnimation(slideUp);
         emailEditText.startAnimation(slideUp);
         passwordEditText.startAnimation(slideUp);
         confirmPasswordEditText.startAnimation(slideUp);
@@ -53,14 +58,14 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
-
     private void registerUser() {
+        String username = usernameEditText.getText().toString().trim();
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
         String confirmPassword = confirmPasswordEditText.getText().toString().trim();
         String phoneNumber = phoneNumberEditText.getText().toString().trim();
 
-        if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password) || TextUtils.isEmpty(confirmPassword) || TextUtils.isEmpty(phoneNumber)) {
+        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(email) || TextUtils.isEmpty(password) || TextUtils.isEmpty(confirmPassword) || TextUtils.isEmpty(phoneNumber)) {
             Toast.makeText(this, "Minden mezőt ki kell tölteni!", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -77,9 +82,21 @@ public class RegisterActivity extends AppCompatActivity {
 
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnSuccessListener(authResult -> {
-                    Toast.makeText(this, "Sikeres regisztráció!", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(RegisterActivity.this, MainActivity.class));
-                    finish();
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    String userId = authResult.getUser().getUid();
+
+                    User user = new User(username, email, phoneNumber, System.currentTimeMillis());
+
+                    // Felhasználó adatainak elmentése
+                    db.collection("users").document(userId).set(user)
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(this, "Sikeres regisztráció!", Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(RegisterActivity.this, MainActivity.class));
+                                finish();
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Adatmentési hiba: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                            );
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Hiba: " + e.getMessage(), Toast.LENGTH_SHORT).show()
