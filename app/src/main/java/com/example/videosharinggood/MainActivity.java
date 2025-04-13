@@ -99,8 +99,8 @@ public class MainActivity extends AppCompatActivity {
             String title = menuItem.getTitle().toString();
             switch (title) {
                 case "Profil":
-                    Toast.makeText(this, "Profil megnyitása", Toast.LENGTH_SHORT).show();
-                    // startActivity(new Intent(...));
+                    Intent intent = new Intent(this, ProfileActivity.class);
+                    startActivity(intent);
                     return true;
                 case "Kijelentkezés":
                     mAuth.signOut();
