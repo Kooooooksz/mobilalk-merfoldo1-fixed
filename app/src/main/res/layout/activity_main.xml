@@ -2,58 +2,100 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
 
-    <!-- Navigációs menü felül -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineTop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.08" />
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="?android:attr/windowBackground"
         app:menu="@menu/bottom_nav_menu"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/guidelineTop"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Üdvözlő szöveg -->
     <TextView
         android:id="@+id/textViewHello"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Üdvözlünk a Video Megosztó Oldalon!"
         android:textSize="20sp"
         android:textColor="#000000"
+        android:textStyle="bold"
+        android:gravity="center"
         app:layout_constraintTop_toBottomOf="@id/bottomNavigationView"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp" />
 
-    <!-- Kísérő szöveg a videó megosztásról -->
     <TextView
         android:id="@+id/textViewDescription"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Oszd meg a videóidat a világgal, fedezd fel a legújabb tartalmakat, és csatlakozz egy nagyszerű közösséghez!\nHa még nem tetted meg, itt regisztrálhatsz:"
         android:textSize="16sp"
         android:textColor="#666666"
+        android:gravity="center"
         app:layout_constraintTop_toBottomOf="@id/textViewHello"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"/>
+        android:layout_marginTop="16dp" />
 
-    <!-- Gomb regisztrációhoz -->
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonGoToRegister"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Regisztráció"
+        app:cornerRadius="12dp"
+        app:icon="@drawable/baseline_app_registration_24"
+        app:iconPadding="8dp"
+        app:iconTint="@android:color/white"
+        android:textColor="@android:color/white"
+        app:backgroundTint="?attr/colorPrimary"
         app:layout_constraintTop_toBottomOf="@id/textViewDescription"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp" />
+
+    <TextView
+        android:id="@+id/textViewLoginPrompt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Ha már van fiókod, itt jelentkezz be:"
+        android:textSize="16sp"
+        android:textColor="#666666"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/buttonGoToRegister"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonGoToLogin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Bejelentkezés"
+        app:cornerRadius="12dp"
+        app:icon="@drawable/ic_baseline_login_24"
+        app:iconPadding="8dp"
+        app:iconTint="@android:color/white"
+        android:textColor="@android:color/white"
+        app:backgroundTint="?attr/colorPrimary"
+        app:layout_constraintTop_toBottomOf="@id/textViewLoginPrompt"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

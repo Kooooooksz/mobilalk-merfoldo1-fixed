@@ -8,9 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -18,6 +16,7 @@ public class ProfileActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseUser user;
     private FirebaseFirestore db;
+    private NavigationActivity navigationActivity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +29,10 @@ public class ProfileActivity extends AppCompatActivity {
         user = mAuth.getCurrentUser();
 
         textViewProfile = findViewById(R.id.textViewProfile);
+
+        // Inicializáljuk a NavigationActivity-t, hogy beállítsuk a navigációt
+        navigationActivity = new NavigationActivity(this);
+        navigationActivity.setupNavigation(findViewById(R.id.bottomNavigationView));
 
         if (user != null) {
             String userId = user.getUid();
@@ -48,7 +51,7 @@ public class ProfileActivity extends AppCompatActivity {
                                     "Felhasználóév: " + (displayName != null ? displayName : "Nincs név") + "\n" +
                                     "Email: " + email + "\n" +
                                     "Telefonszám: " + phoneNumber + "\n"
-                                    );
+                            );
                         } else {
                             Toast.makeText(ProfileActivity.this, "Nincs ilyen felhasználó", Toast.LENGTH_SHORT).show();
                         }

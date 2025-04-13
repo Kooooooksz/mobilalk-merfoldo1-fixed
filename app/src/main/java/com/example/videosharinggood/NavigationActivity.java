@@ -39,6 +39,7 @@ public class NavigationActivity {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
                 Toast.makeText(context, "Kezdőlap", Toast.LENGTH_SHORT).show();
+                context.startActivity(new Intent(context, MainActivity.class));
                 return true;
             } else if (id == R.id.nav_all_videos) {
                 Toast.makeText(context, "Összes videó", Toast.LENGTH_SHORT).show();

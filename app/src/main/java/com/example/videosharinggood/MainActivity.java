@@ -19,6 +19,8 @@ import com.google.firebase.auth.FirebaseUser;
 public class MainActivity extends AppCompatActivity {
 
     private Button buttonGoToRegister;
+
+    private Button buttonGoToLogin;
     private TextView textViewHello;
     private BottomNavigationView bottomNavigationView;
     private FirebaseAuth mAuth;
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
         user = mAuth.getCurrentUser();
 
         buttonGoToRegister = findViewById(R.id.buttonGoToRegister);
+        buttonGoToLogin = findViewById(R.id.buttonGoToLogin);
         textViewHello = findViewById(R.id.textViewHello);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
@@ -63,7 +66,11 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // NavigationActivity használata
+        buttonGoToLogin.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+        });
+
         NavigationActivity navigationHelper = new NavigationActivity(this);
         navigationHelper.setupNavigation(bottomNavigationView);
     }
