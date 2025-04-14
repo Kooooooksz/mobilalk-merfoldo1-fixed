@@ -22,18 +22,14 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonGoToRegister;
     private Button buttonGoToLogin;
     private TextView textViewHello;
+
+    private TextView textViewLoginPrompt;
     private BottomNavigationView bottomNavigationView;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
     private FirebaseFirestore db;
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (isFinishing()) {
-            FirebaseAuth.getInstance().signOut();
-        }
-    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
         buttonGoToRegister = findViewById(R.id.buttonGoToRegister);
         buttonGoToLogin = findViewById(R.id.buttonGoToLogin);
         textViewHello = findViewById(R.id.textViewHello);
+        textViewLoginPrompt = findViewById(R.id.textViewLoginPrompt);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
         if (user != null) {
@@ -62,10 +59,9 @@ public class MainActivity extends AppCompatActivity {
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
-                            // Felhasználói adatok lekérése (pl. 'username')
                             String username = documentSnapshot.getString("username");
                             if (username != null) {
-                                textViewHello.setText("Bejelentkezve: " + username);
+                                textViewHello.setText("Üdvözöllek,  " + username);
                             } else {
                                 textViewHello.setText("Bejelentkezve: Név nem elérhető");
                             }
@@ -76,8 +72,16 @@ public class MainActivity extends AppCompatActivity {
                     .addOnFailureListener(e -> {
                         textViewHello.setText("Hiba történt a felhasználó adatainak lekérésekor");
                     });
+
+            buttonGoToRegister.setVisibility(Button.GONE);
+            buttonGoToLogin.setVisibility(Button.GONE);
+            textViewLoginPrompt.setVisibility(TextView.GONE);
         } else {
-            textViewHello.setText("Nem vagy bejelentkezve.");
+
+
+            buttonGoToRegister.setVisibility(Button.VISIBLE);
+            buttonGoToLogin.setVisibility(Button.VISIBLE);
+            textViewLoginPrompt.setVisibility(TextView.VISIBLE);
         }
 
         buttonGoToRegister.setOnClickListener(v -> {

@@ -24,17 +24,15 @@ public class NavigationActivity {
         this.context = context;
         this.mAuth = FirebaseAuth.getInstance();
         this.user = mAuth.getCurrentUser();
-        this.db = FirebaseFirestore.getInstance(); // Firestore inicializálása
+        this.db = FirebaseFirestore.getInstance();
     }
 
     public void setupNavigation(BottomNavigationView bottomNavigationView) {
-        // Profil menü beállítása
         MenuItem profileItem = bottomNavigationView.getMenu().findItem(R.id.nav_profile);
 
         if (user != null) {
             String userId = user.getUid();
 
-            // Lekérdezzük a felhasználót a Firestore-ból
             db.collection("users").document(userId)
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
@@ -54,9 +52,14 @@ public class NavigationActivity {
                     });
         } else {
             profileItem.setTitle("Bejelentkezés");
+            profileItem.setOnMenuItemClickListener(item -> {
+
+                context.startActivity(new Intent(context, LoginActivity.class));
+                return true;
+
+            });
         }
 
-        // Bottom navigation listener
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
@@ -64,7 +67,7 @@ public class NavigationActivity {
                 context.startActivity(new Intent(context, MainActivity.class));
                 return true;
             } else if (id == R.id.nav_all_videos) {
-                Toast.makeText(context, "Összes videó", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Ezt majd 2. mérföldkőben :)", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == R.id.nav_profile) {
                 showProfilePopup(bottomNavigationView);
@@ -80,8 +83,6 @@ public class NavigationActivity {
         if (user != null) {
             popupMenu.getMenu().add("Profil");
             popupMenu.getMenu().add("Kijelentkezés");
-        } else {
-            popupMenu.getMenu().add("Bejelentkezés");
         }
 
         popupMenu.setOnMenuItemClickListener(menuItem -> {
