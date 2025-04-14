@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp"
+    tools:context=".MainActivity">
+
+    <!-- Vertikális guideline a középpont elhelyezéséhez -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineVertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5" />
+
+    <!-- BottomNavigationView -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:menu="@menu/bottom_nav_menu"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Bal oldali szövegek -->
+    <LinearLayout
+        android:id="@+id/leftColumn"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/guidelineVertical"
+        app:layout_constraintTop_toBottomOf="@id/bottomNavigationView"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:id="@+id/textViewHello"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/udvozlo"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/textViewDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/oszdmeg"
+            android:textSize="16sp"
+            android:textColor="#666666"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- Jobb oldali gombok -->
+
+    <LinearLayout
+        android:id="@+id/rightColumn"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintStart_toEndOf="@id/guidelineVertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bottomNavigationView"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGoToRegister"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/regisztracio"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/baseline_app_registration_24"
+            app:iconPadding="8dp"
+            app:iconTint="@android:color/white"
+            android:textColor="@android:color/white"
+            app:backgroundTint="?attr/colorPrimary"
+/>
+
+        <TextView
+            android:id="@+id/textViewLoginPrompt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/havan"
+            android:textSize="16sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGoToLogin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/bejelentkezes"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_baseline_login_24"
+            app:iconPadding="8dp"
+            app:iconTint="@android:color/white"
+            android:textColor="@android:color/white"
+            app:backgroundTint="?attr/colorPrimary" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

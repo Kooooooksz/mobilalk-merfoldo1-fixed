@@ -10,17 +10,21 @@ import android.widget.Toast;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 public class NavigationActivity {
 
     private final Context context;
     private final FirebaseAuth mAuth;
     private final FirebaseUser user;
+    private final FirebaseFirestore db;
 
     public NavigationActivity(Context context) {
         this.context = context;
         this.mAuth = FirebaseAuth.getInstance();
         this.user = mAuth.getCurrentUser();
+        this.db = FirebaseFirestore.getInstance(); // Firestore inicializálása
     }
 
     public void setupNavigation(BottomNavigationView bottomNavigationView) {
@@ -28,8 +32,26 @@ public class NavigationActivity {
         MenuItem profileItem = bottomNavigationView.getMenu().findItem(R.id.nav_profile);
 
         if (user != null) {
-            String email = user.getEmail();
-            profileItem.setTitle(email.split("@")[0]);
+            String userId = user.getUid();
+
+            // Lekérdezzük a felhasználót a Firestore-ból
+            db.collection("users").document(userId)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String username = documentSnapshot.getString("username");
+                            if (username != null) {
+                                profileItem.setTitle(username);
+                            } else {
+                                profileItem.setTitle("Felhasználó");
+                            }
+                        } else {
+                            profileItem.setTitle("Felhasználó");
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        profileItem.setTitle("Hiba történt");
+                    });
         } else {
             profileItem.setTitle("Bejelentkezés");
         }

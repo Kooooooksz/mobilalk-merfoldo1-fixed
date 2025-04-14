@@ -2,7 +2,6 @@ package com.example.videosharinggood;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -15,16 +14,18 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 public class MainActivity extends AppCompatActivity {
 
     private Button buttonGoToRegister;
-
     private Button buttonGoToLogin;
     private TextView textViewHello;
     private BottomNavigationView bottomNavigationView;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
+    private FirebaseFirestore db;
 
     @Override
     protected void onStop() {
@@ -48,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         user = mAuth.getCurrentUser();
+        db = FirebaseFirestore.getInstance();
 
         buttonGoToRegister = findViewById(R.id.buttonGoToRegister);
         buttonGoToLogin = findViewById(R.id.buttonGoToLogin);
@@ -55,8 +57,25 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
         if (user != null) {
-            String email = user.getEmail();
-            textViewHello.setText("Bejelentkezve: " + email);
+            String userId = user.getUid();
+            db.collection("users").document(userId)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            // Felhasználói adatok lekérése (pl. 'username')
+                            String username = documentSnapshot.getString("username");
+                            if (username != null) {
+                                textViewHello.setText("Bejelentkezve: " + username);
+                            } else {
+                                textViewHello.setText("Bejelentkezve: Név nem elérhető");
+                            }
+                        } else {
+                            textViewHello.setText("Bejelentkezve: Nincs adat a felhasználóról");
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        textViewHello.setText("Hiba történt a felhasználó adatainak lekérésekor");
+                    });
         } else {
             textViewHello.setText("Nem vagy bejelentkezve.");
         }
