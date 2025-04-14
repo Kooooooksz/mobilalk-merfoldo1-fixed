@@ -29,7 +29,7 @@
             android:id="@+id/editTextEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email"
+            android:hint="@string/email"
             android:inputType="textEmailAddress" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -47,7 +47,7 @@
             android:id="@+id/editTextPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Jelszó"
+            android:hint="@string/jelszo"
             android:inputType="textPassword" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -55,7 +55,7 @@
         android:id="@+id/buttonLogin"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Bejelentkezés"
+        android:text="@string/bejelentkezes"
         android:textColor="@android:color/white"
         app:cornerRadius="16dp"
         app:icon="@drawable/ic_baseline_login_24"
@@ -71,8 +71,9 @@
         android:id="@+id/buttonRegister"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Regisztráció"
+        android:text="@string/regisztracio"
         android:textColor="@android:color/white"
+        app:icon="@drawable/baseline_app_registration_24"
         app:cornerRadius="16dp"
         app:backgroundTint="?attr/colorSecondary"
         android:layout_marginTop="12dp"

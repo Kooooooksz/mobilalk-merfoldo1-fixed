@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">VideoSharingGood</string>
+    <string name="bejelentkezes">Bejelentkezés</string>
+    <string name="regisztracio">Regisztráció</string>
+    <string name="jelszo">Jelszó</string>
+    <string name="email">Email</string>
+    <string name="udvozlo">Üdvözlünk a Video Megosztó Oldalon!</string>
+    <string name="oszdmeg">Oszd meg a videóidat a világgal, fedezd fel a legújabb tartalmakat, és csatlakozz egy nagyszerű közösséghez!\nHa még nem tetted meg, itt regisztrálhatsz:</string>
+    <string name="havan">Ha már van fiókod, itt jelentkezz be:</string>
+    <string name="felhasznalonev">Felhasználónév</string>
+    <string name="jelszoujra">Jelszó megerősítés</string>
+    <string name="telefonszam">Telefonszám</string>
+    <string name="visszabejelentkezes">Vissza a bejelentkezéshez</string>
 </resources>
