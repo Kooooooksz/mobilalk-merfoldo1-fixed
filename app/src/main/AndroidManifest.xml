@@ -13,31 +13,28 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VideoSharingGood"
         tools:targetApi="31">
-
+        <activity
+            android:name=".VideoActivity"
+            android:exported="false" />
         <!-- Main launcher activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <!-- Auth-related activities -->
+        </activity> <!-- Auth-related activities -->
         <activity
             android:name=".LoginActivity"
             android:exported="false" />
         <activity
             android:name=".RegisterActivity"
-            android:exported="false" />
-
-        <!-- User-related activities -->
+            android:exported="false" /> <!-- User-related activities -->
         <activity
             android:name=".ProfileActivity"
             android:exported="false" />
-
-        <!-- Utility/helper activity -->
     </application>
 
 </manifest>

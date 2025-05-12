@@ -67,9 +67,9 @@ public class NavigationActivity {
                 context.startActivity(new Intent(context, MainActivity.class));
                 return true;
             } else if (id == R.id.nav_all_videos) {
-                Toast.makeText(context, "Ezt majd 2. mérföldkőben :)", Toast.LENGTH_SHORT).show();
+                context.startActivity(new Intent(context, VideoActivity.class));
                 return true;
-            } else if (id == R.id.nav_profile) {
+            }else if (id == R.id.nav_profile) {
                 showProfilePopup(bottomNavigationView);
                 return true;
             }
