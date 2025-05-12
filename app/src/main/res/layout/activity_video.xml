@@ -6,7 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Videó címe -->
     <EditText
         android:id="@+id/editTitle"
         android:layout_width="match_parent"
@@ -14,7 +13,6 @@
         android:hint="Videó címe"
         android:inputType="text" />
 
-    <!-- Videó kiválasztása -->
     <Button
         android:id="@+id/btnChooseVideo"
         android:layout_width="match_parent"
@@ -22,7 +20,13 @@
         android:text="Videó kiválasztása"
         android:layout_marginTop="12dp" />
 
-    <!-- Kiválasztott videó útvonal -->
+    <Button
+        android:id="@+id/btnRecordVideo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Videó rögzítése"
+        android:layout_marginTop="8dp" />
+
     <TextView
         android:id="@+id/txtVideoPath"
         android:layout_width="match_parent"
@@ -31,12 +35,10 @@
         android:textColor="#666666"
         android:layout_marginTop="8dp" />
 
-    <!-- Feltöltés gomb -->
     <Button
         android:id="@+id/btnUpload"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Videó feltöltése"
         android:layout_marginTop="16dp" />
-
 </LinearLayout>
