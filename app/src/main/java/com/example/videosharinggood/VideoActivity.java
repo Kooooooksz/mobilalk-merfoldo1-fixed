@@ -31,9 +31,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -41,32 +39,29 @@ import java.util.List;
 
 public class VideoActivity extends AppCompatActivity {
 
-    private static final int CAMERA_PERMISSION_REQUEST_CODE = 1001;
+    private static final String TAG = "VideoActivity";
     private static final String VIDEO_MIME_TYPE = "video/mp4";
-    private static final String TAG = "VideoActivity"; // Added TAG for logging
 
     private EditText editTitle;
     private Button btnChooseVideo, btnUpload, btnRecordVideo;
     private TextView txtVideoPath;
+    private RecyclerView recyclerView;
+
     private Uri videoUri;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private FirebaseStorage storage;
     private StorageReference storageRef;
 
-    // RecyclerView and adapter
-    private RecyclerView recyclerView;
+    private final List<Video> videoList = new ArrayList<>();
     private VideoAdapter videoAdapter;
-    private List<Video> videoList = new ArrayList<>();
 
+    // Activity Result Launchers
     private final ActivityResultLauncher<Intent> pickVideoLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     videoUri = result.getData().getData();
-                    if (videoUri != null) {
-                        txtVideoPath.setText(getFileNameFromUri(videoUri));
-                    }
+                    txtVideoPath.setText(getFileNameFromUri(videoUri));
                 }
             });
 
@@ -74,18 +69,15 @@ public class VideoActivity extends AppCompatActivity {
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK && videoUri != null) {
                     txtVideoPath.setText(getFileNameFromUri(videoUri));
-                } else if (result.getResultCode() != RESULT_OK) {
+                } else {
                     Toast.makeText(this, "Video recording cancelled", Toast.LENGTH_SHORT).show();
                 }
             });
 
-    private final ActivityResultLauncher<String> requestPermissionLauncher =
+    private final ActivityResultLauncher<String> permissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    startVideoRecording();
-                } else {
-                    Toast.makeText(this, "Camera permission is required to record videos", Toast.LENGTH_SHORT).show();
-                }
+                if (isGranted) startVideoRecording();
+                else Toast.makeText(this, "Camera permission is required", Toast.LENGTH_SHORT).show();
             });
 
     @Override
@@ -95,9 +87,9 @@ public class VideoActivity extends AppCompatActivity {
 
         initializeViews();
         initializeFirebase();
-        setupButtonListeners();
-        setupRecyclerView(); // Initialize RecyclerView
-        fetchVideosFromFirestore(); // Fetch videos from Firestore and update RecyclerView
+        initializeRecyclerView();
+        setupListeners();
+        fetchVideosFromFirestore();
     }
 
     private void initializeViews() {
@@ -106,20 +98,38 @@ public class VideoActivity extends AppCompatActivity {
         btnUpload = findViewById(R.id.btnUpload);
         btnRecordVideo = findViewById(R.id.btnRecordVideo);
         txtVideoPath = findViewById(R.id.txtVideoPath);
-        recyclerView = findViewById(R.id.recyclerView); // Initialize RecyclerView
+        recyclerView = findViewById(R.id.recyclerView);
     }
 
     private void initializeFirebase() {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
-        storage = FirebaseStorage.getInstance();
-        storageRef = storage.getReference();
+        storageRef = FirebaseStorage.getInstance().getReference();
     }
 
-    private void setupButtonListeners() {
+    private void initializeRecyclerView() {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        videoAdapter = new VideoAdapter(videoList, new VideoAdapter.OnVideoActionListener() {
+            @Override
+            public void onEdit(Video video) {
+                Intent editIntent = new Intent(VideoActivity.this, EditVideoActivity.class);
+                editIntent.putExtra("title", video.getTitle());
+                startActivity(editIntent);
+            }
+
+            @Override
+            public void onDelete(Video video) {
+                deleteVideoFromFirestore(video.getTitle());
+            }
+        });
+
+        recyclerView.setAdapter(videoAdapter);
+    }
+
+    private void setupListeners() {
         btnChooseVideo.setOnClickListener(v -> chooseVideo());
         btnUpload.setOnClickListener(v -> uploadVideo());
-        btnRecordVideo.setOnClickListener(v -> checkCameraPermissionAndRecord());
+        btnRecordVideo.setOnClickListener(v -> checkCameraPermission());
     }
 
     private void chooseVideo() {
@@ -128,79 +138,63 @@ public class VideoActivity extends AppCompatActivity {
         pickVideoLauncher.launch(Intent.createChooser(intent, "Select a video"));
     }
 
-    private void checkCameraPermissionAndRecord() {
+    private void checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startVideoRecording();
         } else {
-            if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                Toast.makeText(this, "Camera permission is needed to record videos", Toast.LENGTH_SHORT).show();
-            }
-            requestPermissionLauncher.launch(Manifest.permission.CAMERA);
+            permissionLauncher.launch(Manifest.permission.CAMERA);
         }
     }
 
     private void startVideoRecording() {
-        try {
-            ContentValues values = new ContentValues();
-            values.put(MediaStore.Video.Media.TITLE, "video_" + System.currentTimeMillis());
-            values.put(MediaStore.Video.Media.MIME_TYPE, VIDEO_MIME_TYPE);
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Video.Media.TITLE, "video_" + System.currentTimeMillis());
+        values.put(MediaStore.Video.Media.MIME_TYPE, VIDEO_MIME_TYPE);
 
-            videoUri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
-            if (videoUri == null) {
-                Toast.makeText(this, "Error creating video file", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        videoUri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
 
+        if (videoUri != null) {
             Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
             intent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri);
-            intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1); // High quality
+            intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1);
             captureVideoLauncher.launch(intent);
-        } catch (Exception e) {
-            Toast.makeText(this, "Error starting camera: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Failed to create video file", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void uploadVideo() {
         if (!validateInputs()) return;
 
-        FirebaseUser firebaseUser = mAuth.getCurrentUser();
-        if (firebaseUser == null || firebaseUser.getEmail() == null) {
-            Toast.makeText(this, "Authentication required", Toast.LENGTH_SHORT).show();
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || user.getEmail() == null) {
+            Toast.makeText(this, "User not authenticated", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String fileName = "videos/" + System.currentTimeMillis() + ".mp4";
         StorageReference videoRef = storageRef.child(fileName);
 
-        // Get the actual MIME type
-        String actualMimeType = getMimeType(videoUri);
-        Log.d(TAG, "Actual MIME Type: " + actualMimeType); // Log the MIME type
-
-        // Validate MIME type
-        if (!actualMimeType.equals("video/mp4")) {
+        String mimeType = getMimeType(videoUri);
+        if (!VIDEO_MIME_TYPE.equals(mimeType)) {
             Toast.makeText(this, "Only MP4 videos are allowed", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Set metadata with correct MIME type
-        StorageMetadata metadata = new StorageMetadata.Builder()
-                .setContentType(actualMimeType) // Use the actual MIME type
-                .build();
+        StorageMetadata metadata = new StorageMetadata.Builder().setContentType(mimeType).build();
 
         videoRef.putFile(videoUri, metadata)
-                .addOnProgressListener(taskSnapshot -> {
-                    double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                .addOnProgressListener(snapshot -> {
+                    double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
                     Toast.makeText(this, "Uploading: " + (int) progress + "%", Toast.LENGTH_SHORT).show();
                 })
                 .continueWithTask(task -> {
-                    if (!task.isSuccessful()) {
-                        throw task.getException();
-                    }
+                    if (!task.isSuccessful()) throw task.getException();
                     return videoRef.getDownloadUrl();
                 })
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        saveVideoToFirestore(task.getResult().toString(), firebaseUser.getEmail());
+                        saveVideoToFirestore(task.getResult().toString(), user.getEmail());
                     } else {
                         Toast.makeText(this, "Upload failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
@@ -209,52 +203,51 @@ public class VideoActivity extends AppCompatActivity {
 
     private boolean validateInputs() {
         if (editTitle.getText().toString().trim().isEmpty()) {
-            Toast.makeText(this, "Please enter a title", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Enter a title", Toast.LENGTH_SHORT).show();
             return false;
         }
         if (videoUri == null) {
-            Toast.makeText(this, "Please select or record a video first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No video selected", Toast.LENGTH_SHORT).show();
             return false;
         }
         return true;
     }
 
-    private void saveVideoToFirestore(String videoUrl, String userEmail) {
+    private void saveVideoToFirestore(String url, String email) {
         String date = DateFormat.getDateTimeInstance().format(new Date());
 
-        db.collection("users")
-                .whereEqualTo("email", userEmail)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty()) {
-                        Toast.makeText(this, "User data not found", Toast.LENGTH_SHORT).show();
+        db.collection("users").whereEqualTo("email", email).get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.isEmpty()) {
+                        Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    String userName = querySnapshot.getDocuments().get(0).getString("username");
-                    if (userName == null) userName = "Unknown";
-
-                    Video video = new Video(
-                            editTitle.getText().toString().trim(),
-                            date,
-                            userName,
-                            userEmail,
-                            videoUrl
-                    );
+                    String username = snapshot.getDocuments().get(0).getString("username");
+                    Video video = new Video(editTitle.getText().toString().trim(), date, username != null ? username : "Unknown", email, url);
 
                     db.collection("videos").add(video)
-                            .addOnSuccessListener(documentReference -> {
+                            .addOnSuccessListener(docRef -> {
                                 resetForm();
-                                Toast.makeText(this, "Video uploaded successfully", Toast.LENGTH_SHORT).show();
-                                fetchVideosFromFirestore(); // Update the video list after upload
+                                Toast.makeText(this, "Video uploaded", Toast.LENGTH_SHORT).show();
+                                fetchVideosFromFirestore();
                             })
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(this, "Failed to save video info", Toast.LENGTH_SHORT).show();
-                            });
+                            .addOnFailureListener(e -> Toast.makeText(this, "Failed to save video info", Toast.LENGTH_SHORT).show());
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error loading user data", Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e -> Toast.makeText(this, "Error retrieving user", Toast.LENGTH_SHORT).show());
+    }
+
+    private void fetchVideosFromFirestore() {
+        db.collection("videos").get()
+                .addOnSuccessListener(snapshot -> {
+                    videoList.clear();
+                    snapshot.forEach(doc -> {
+                        Video video = doc.toObject(Video.class);
+                        videoList.add(video);
+                    });
+                    videoAdapter.notifyDataSetChanged();
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to load videos", Toast.LENGTH_SHORT).show());
     }
 
     private void resetForm() {
@@ -266,83 +259,50 @@ public class VideoActivity extends AppCompatActivity {
     private String getFileNameFromUri(Uri uri) {
         String path = uri.getPath();
         if (path != null) {
-            int cut = path.lastIndexOf('/');
-            if (cut != -1) {
-                return path.substring(cut + 1);
-            }
+            int lastSlash = path.lastIndexOf('/');
+            return lastSlash != -1 ? path.substring(lastSlash + 1) : path;
         }
-        return "Video file";
+        return "video.mp4";
     }
 
     private String getMimeType(Uri uri) {
-        String mimeType = null;
-        if (uri.getScheme().equals("content")) {
-            try {
-                mimeType = getContentResolver().getType(uri);
-            } catch (Exception e) {
-                Log.e(TAG, "Error getting MIME type: " + e.getMessage());
-            }
+        if ("content".equals(uri.getScheme())) {
+            return getContentResolver().getType(uri);
         } else {
-            String fileExtension = getFileExtensionFromUri(uri);
-            if (fileExtension != null) {
-                mimeType = getMimeTypeFromExtension(fileExtension);
-            }
-        }
-        return mimeType;
-    }
-
-    private String getFileExtensionFromUri(Uri uri) {
-        String extension = null;
-        if (uri.getScheme().equals("content")) {
-            try {
-                android.content.ContentResolver cR = getContentResolver();
-                android.database.Cursor cursor = cR.query(uri, null, null, null, null);
-                if (cursor != null) {
-                    cursor.moveToFirst();
-                    int columnIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
-                    String fileName = cursor.getString(columnIndex);
-                    extension = fileName.substring(fileName.lastIndexOf(".") + 1);
-                    cursor.close();
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error getting file extension: " + e.getMessage());
-            }
-        }
-        return extension;
-    }
-
-    private String getMimeTypeFromExtension(String extension) {
-        switch (extension.toLowerCase()) {
-            case "mp4":
-                return "video/mp4";
-            default:
-                return "application/octet-stream";
+            String extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
+            return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
         }
     }
 
-    // Set up the RecyclerView with the VideoAdapter
-    private void setupRecyclerView() {
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        videoAdapter = new VideoAdapter(videoList);
-        recyclerView.setAdapter(videoAdapter);
-    }
-
-    // Fetch the videos from Firestore and update the RecyclerView
-    private void fetchVideosFromFirestore() {
+    // Firebase video deletion logic
+    private void deleteVideoFromFirestore(String videoTitle) {
         db.collection("videos")
+                .whereEqualTo("title", videoTitle) // Search by title
                 .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    videoList.clear();
-                    for (DocumentSnapshot documentSnapshot : querySnapshot.getDocuments()) {
-                        Video video = documentSnapshot.toObject(Video.class);
-                        if (video != null) {
-                            videoList.add(video);
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    for (DocumentSnapshot document : queryDocumentSnapshots) {
+                        String filePath = document.getString("videoUrl"); // Assume the file path is stored in 'filePath' field
+                        if (filePath != null) {
+                            // Get the reference to the file in Firebase Storage
+                            StorageReference storageReference = FirebaseStorage.getInstance().getReferenceFromUrl(filePath);
+
+                            // Delete the file from Storage
+                            storageReference.delete()
+                                    .addOnSuccessListener(aVoid -> {
+                                        // Delete the video document from Firestore after successfully deleting the file
+                                        document.getReference().delete()
+                                                .addOnSuccessListener(aVoid1 -> {
+                                                    Toast.makeText(this, videoTitle + " Video deleted successfully", Toast.LENGTH_SHORT).show();
+                                                    fetchVideosFromFirestore(); // Refresh video list
+                                                })
+                                                .addOnFailureListener(e -> Toast.makeText(this, "Error deleting video document", Toast.LENGTH_SHORT).show());
+                                    })
+                                    .addOnFailureListener(e -> Toast.makeText(this, "Error deleting video file", Toast.LENGTH_SHORT).show());
                         }
                     }
-                    videoAdapter.notifyDataSetChanged();
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to fetch videos", Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e -> Toast.makeText(this, "Error fetching video", Toast.LENGTH_SHORT).show());
     }
+
+
 }
