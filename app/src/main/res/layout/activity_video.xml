@@ -41,4 +41,11 @@
         android:layout_height="wrap_content"
         android:text="Videó feltöltése"
         android:layout_marginTop="16dp" />
+
+    <!-- RecyclerView hozzáadása itt -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp" />
 </LinearLayout>

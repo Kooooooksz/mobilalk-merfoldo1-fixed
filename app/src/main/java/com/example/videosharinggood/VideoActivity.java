@@ -19,10 +19,14 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.videosharinggood.adapters.VideoAdapter;
 import com.example.videosharinggood.models.Video;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageMetadata;
@@ -30,9 +34,10 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class VideoActivity extends AppCompatActivity {
 
@@ -49,6 +54,11 @@ public class VideoActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseStorage storage;
     private StorageReference storageRef;
+
+    // RecyclerView and adapter
+    private RecyclerView recyclerView;
+    private VideoAdapter videoAdapter;
+    private List<Video> videoList = new ArrayList<>();
 
     private final ActivityResultLauncher<Intent> pickVideoLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -86,6 +96,8 @@ public class VideoActivity extends AppCompatActivity {
         initializeViews();
         initializeFirebase();
         setupButtonListeners();
+        setupRecyclerView(); // Initialize RecyclerView
+        fetchVideosFromFirestore(); // Fetch videos from Firestore and update RecyclerView
     }
 
     private void initializeViews() {
@@ -94,6 +106,7 @@ public class VideoActivity extends AppCompatActivity {
         btnUpload = findViewById(R.id.btnUpload);
         btnRecordVideo = findViewById(R.id.btnRecordVideo);
         txtVideoPath = findViewById(R.id.txtVideoPath);
+        recyclerView = findViewById(R.id.recyclerView); // Initialize RecyclerView
     }
 
     private void initializeFirebase() {
@@ -132,7 +145,6 @@ public class VideoActivity extends AppCompatActivity {
             values.put(MediaStore.Video.Media.TITLE, "video_" + System.currentTimeMillis());
             values.put(MediaStore.Video.Media.MIME_TYPE, VIDEO_MIME_TYPE);
 
-
             videoUri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
             if (videoUri == null) {
                 Toast.makeText(this, "Error creating video file", Toast.LENGTH_SHORT).show();
@@ -163,6 +175,12 @@ public class VideoActivity extends AppCompatActivity {
         // Get the actual MIME type
         String actualMimeType = getMimeType(videoUri);
         Log.d(TAG, "Actual MIME Type: " + actualMimeType); // Log the MIME type
+
+        // Validate MIME type
+        if (!actualMimeType.equals("video/mp4")) {
+            Toast.makeText(this, "Only MP4 videos are allowed", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         // Set metadata with correct MIME type
         StorageMetadata metadata = new StorageMetadata.Builder()
@@ -228,6 +246,7 @@ public class VideoActivity extends AppCompatActivity {
                             .addOnSuccessListener(documentReference -> {
                                 resetForm();
                                 Toast.makeText(this, "Video uploaded successfully", Toast.LENGTH_SHORT).show();
+                                fetchVideosFromFirestore(); // Update the video list after upload
                             })
                             .addOnFailureListener(e -> {
                                 Toast.makeText(this, "Failed to save video info", Toast.LENGTH_SHORT).show();
@@ -277,23 +296,53 @@ public class VideoActivity extends AppCompatActivity {
         if (uri.getScheme().equals("content")) {
             try {
                 android.content.ContentResolver cR = getContentResolver();
-                MimeTypeMap mime = MimeTypeMap.getSingleton();
-                extension = mime.getExtensionFromMimeType(cR.getType(uri));
+                android.database.Cursor cursor = cR.query(uri, null, null, null, null);
+                if (cursor != null) {
+                    cursor.moveToFirst();
+                    int columnIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                    String fileName = cursor.getString(columnIndex);
+                    extension = fileName.substring(fileName.lastIndexOf(".") + 1);
+                    cursor.close();
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error getting file extension: " + e.getMessage());
             }
-        } else {
-            extension = android.webkit.MimeTypeMap.getFileExtensionFromUrl(uri.toString());
         }
         return extension;
     }
 
     private String getMimeTypeFromExtension(String extension) {
-        if (extension != null) {
-            MimeTypeMap mime = MimeTypeMap.getSingleton();
-            return mime.getMimeTypeFromExtension(extension);
+        switch (extension.toLowerCase()) {
+            case "mp4":
+                return "video/mp4";
+            default:
+                return "application/octet-stream";
         }
-        return null;
+    }
+
+    // Set up the RecyclerView with the VideoAdapter
+    private void setupRecyclerView() {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        videoAdapter = new VideoAdapter(videoList);
+        recyclerView.setAdapter(videoAdapter);
+    }
+
+    // Fetch the videos from Firestore and update the RecyclerView
+    private void fetchVideosFromFirestore() {
+        db.collection("videos")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    videoList.clear();
+                    for (DocumentSnapshot documentSnapshot : querySnapshot.getDocuments()) {
+                        Video video = documentSnapshot.toObject(Video.class);
+                        if (video != null) {
+                            videoList.add(video);
+                        }
+                    }
+                    videoAdapter.notifyDataSetChanged();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to fetch videos", Toast.LENGTH_SHORT).show();
+                });
     }
 }
-
