@@ -5,13 +5,15 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
-import android.location.Location;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -19,6 +21,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.videosharinggood.adapters.VideoAdapter;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -40,65 +43,77 @@ public class MainActivity extends AppCompatActivity {
     private TextView textViewLoginPrompt;
     private TextView textViewLocation;
     private BottomNavigationView bottomNavigationView;
+
     private FirebaseAuth mAuth;
     private FirebaseUser user;
     private FirebaseFirestore db;
     private FusedLocationProviderClient fusedLocationClient;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+        // Edge-to-edge támogatás
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        setContentView(R.layout.activity_main);
 
         mAuth = FirebaseAuth.getInstance();
         user = mAuth.getCurrentUser();
         db = FirebaseFirestore.getInstance();
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
+        // UI elemek összekötése
         buttonGoToRegister = findViewById(R.id.buttonGoToRegister);
         buttonGoToLogin = findViewById(R.id.buttonGoToLogin);
         textViewHello = findViewById(R.id.textViewHello);
         textViewLoginPrompt = findViewById(R.id.textViewLoginPrompt);
-        bottomNavigationView = findViewById(R.id.bottomNavigationView);
         textViewLocation = findViewById(R.id.textViewLocation);
+        bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
+
+
+
+        // Felhasználó állapot kezelése
         if (user != null) {
-            String userId = user.getUid();
-            db.collection("users").document(userId)
-                    .get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            String username = documentSnapshot.getString("username");
-                            textViewHello.setText("Üdvözöllek, " + (username != null ? username : "Név nem elérhető"));
-                        } else {
-                            textViewHello.setText("Bejelentkezve: Nincs adat a felhasználóról");
-                        }
-                    })
-                    .addOnFailureListener(e -> textViewHello.setText("Hiba történt a felhasználó adatainak lekérésekor"));
-
-            buttonGoToRegister.setVisibility(Button.GONE);
-            buttonGoToLogin.setVisibility(Button.GONE);
-            textViewLoginPrompt.setVisibility(TextView.GONE);
+            loadUserData(user.getUid());
+            buttonGoToRegister.setVisibility(View.GONE);
+            buttonGoToLogin.setVisibility(View.GONE);
+            textViewLoginPrompt.setVisibility(View.GONE);
         } else {
-            buttonGoToRegister.setVisibility(Button.VISIBLE);
-            buttonGoToLogin.setVisibility(Button.VISIBLE);
-            textViewLoginPrompt.setVisibility(TextView.VISIBLE);
+            buttonGoToRegister.setVisibility(View.VISIBLE);
+            buttonGoToLogin.setVisibility(View.VISIBLE);
+            textViewLoginPrompt.setVisibility(View.VISIBLE);
         }
 
         buttonGoToRegister.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, RegisterActivity.class)));
         buttonGoToLogin.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, LoginActivity.class)));
 
+        // Bottom navigation beállítása (feltételezem van egy NavigationActivity osztályod)
         NavigationActivity navigationHelper = new NavigationActivity(this);
         navigationHelper.setupNavigation(bottomNavigationView);
 
         checkLocationPermission();
+    }
+
+
+    private void loadUserData(String userId) {
+        db.collection("users").document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String username = documentSnapshot.getString("username");
+                        textViewHello.setText("Üdvözöllek, " + (username != null ? username : "Név nem elérhető"));
+                    } else {
+                        textViewHello.setText("Bejelentkezve: Nincs adat a felhasználóról");
+                    }
+                })
+                .addOnFailureListener(e -> textViewHello.setText("Hiba történt a felhasználó adatainak lekérésekor"));
     }
 
     private void checkLocationPermission() {
@@ -118,14 +133,17 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE &&
-                grantResults.length > 0 &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED &&
-                grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-            getLocation();
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length >= 2 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED &&
+                    grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                getLocation();
+            } else {
+                Toast.makeText(this, "A helyhozzáférés megtagadva", Toast.LENGTH_SHORT).show();
+                textViewLocation.setText("Helyhozzáférés megtagadva");
+            }
         } else {
-            Toast.makeText(this, "A helyhozzáférés megtagadva", Toast.LENGTH_SHORT).show();
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 

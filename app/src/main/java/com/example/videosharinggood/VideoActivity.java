@@ -9,14 +9,15 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -28,6 +29,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
@@ -46,6 +48,7 @@ public class VideoActivity extends AppCompatActivity {
     private Button btnChooseVideo, btnUpload, btnRecordVideo;
     private TextView txtVideoPath;
     private RecyclerView recyclerView;
+    private Spinner spinnerSort;
 
     private Uri videoUri;
 
@@ -89,7 +92,8 @@ public class VideoActivity extends AppCompatActivity {
         initializeFirebase();
         initializeRecyclerView();
         setupListeners();
-        fetchVideosFromFirestore();
+        setupSpinner();
+        fetchVideosFromFirestoreOrdered("date"); // alapértelmezett rendezés dátum szerint
     }
 
     private void initializeViews() {
@@ -99,6 +103,7 @@ public class VideoActivity extends AppCompatActivity {
         btnRecordVideo = findViewById(R.id.btnRecordVideo);
         txtVideoPath = findViewById(R.id.txtVideoPath);
         recyclerView = findViewById(R.id.recyclerView);
+        spinnerSort = findViewById(R.id.spinnerSort); // Spinner ID a layoutban legyen ez
     }
 
     private void initializeFirebase() {
@@ -130,6 +135,38 @@ public class VideoActivity extends AppCompatActivity {
         btnChooseVideo.setOnClickListener(v -> chooseVideo());
         btnUpload.setOnClickListener(v -> uploadVideo());
         btnRecordVideo.setOnClickListener(v -> checkCameraPermission());
+    }
+
+    private void setupSpinner() {
+        String[] sortOptions = {"Date", "Title", "Username"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, sortOptions);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerSort.setAdapter(adapter);
+
+        spinnerSort.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                String selected = sortOptions[position];
+                String orderField = "date"; // default
+
+                switch (selected) {
+                    case "Date":
+                        orderField = "uploadDate";  // Ez legyen a Firestore mező neve, vagy ha kell, módosítsd
+                        break;
+                    case "Title":
+                        orderField = "title";
+                        break;
+                    case "Username":
+                        orderField = "uploaderUsername";
+                        break;
+                }
+
+                fetchVideosFromFirestoreOrdered(orderField);
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+        });
     }
 
     private void chooseVideo() {
@@ -230,21 +267,32 @@ public class VideoActivity extends AppCompatActivity {
                             .addOnSuccessListener(docRef -> {
                                 resetForm();
                                 Toast.makeText(this, "Video uploaded", Toast.LENGTH_SHORT).show();
-                                fetchVideosFromFirestore();
+                                fetchVideosFromFirestoreOrdered(spinnerSort.getSelectedItem().toString().toLowerCase());
                             })
                             .addOnFailureListener(e -> Toast.makeText(this, "Failed to save video info", Toast.LENGTH_SHORT).show());
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Error retrieving user", Toast.LENGTH_SHORT).show());
     }
 
-    private void fetchVideosFromFirestore() {
-        db.collection("videos").get()
+    private void fetchVideosFromFirestoreOrdered(String orderField) {
+        Query query;
+        if (orderField.equals("uploadDate")) {
+            query = db.collection("videos").orderBy("uploadDate", Query.Direction.DESCENDING);
+        } else if (orderField.equals("title")) {
+            query = db.collection("videos").orderBy("title", Query.Direction.ASCENDING);
+        } else if (orderField.equals("uploaderUsername")) {
+            query = db.collection("videos").orderBy("uploaderUsername", Query.Direction.ASCENDING);
+        } else {
+            query = db.collection("videos");
+        }
+
+        query.get()
                 .addOnSuccessListener(snapshot -> {
                     videoList.clear();
-                    snapshot.forEach(doc -> {
+                    for (DocumentSnapshot doc : snapshot) {
                         Video video = doc.toObject(Video.class);
-                        videoList.add(video);
-                    });
+                        if (video != null) videoList.add(video);
+                    }
                     videoAdapter.notifyDataSetChanged();
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to load videos", Toast.LENGTH_SHORT).show());
@@ -258,51 +306,30 @@ public class VideoActivity extends AppCompatActivity {
 
     private String getFileNameFromUri(Uri uri) {
         String path = uri.getPath();
-        if (path != null) {
-            int lastSlash = path.lastIndexOf('/');
-            return lastSlash != -1 ? path.substring(lastSlash + 1) : path;
+        if (path == null) return "Selected video";
+        int cut = path.lastIndexOf('/');
+        if (cut != -1) {
+            return path.substring(cut + 1);
         }
-        return "video.mp4";
+        return path;
     }
 
     private String getMimeType(Uri uri) {
-        if ("content".equals(uri.getScheme())) {
-            return getContentResolver().getType(uri);
-        } else {
-            String extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
-            return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-        }
+        String extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
     }
 
-    // Firebase video deletion logic
-    private void deleteVideoFromFirestore(String videoTitle) {
+    private void deleteVideoFromFirestore(String title) {
         db.collection("videos")
-                .whereEqualTo("title", videoTitle) // Search by title
+                .whereEqualTo("title", title)
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    for (DocumentSnapshot document : queryDocumentSnapshots) {
-                        String filePath = document.getString("videoUrl"); // Assume the file path is stored in 'filePath' field
-                        if (filePath != null) {
-                            // Get the reference to the file in Firebase Storage
-                            StorageReference storageReference = FirebaseStorage.getInstance().getReferenceFromUrl(filePath);
-
-                            // Delete the file from Storage
-                            storageReference.delete()
-                                    .addOnSuccessListener(aVoid -> {
-                                        // Delete the video document from Firestore after successfully deleting the file
-                                        document.getReference().delete()
-                                                .addOnSuccessListener(aVoid1 -> {
-                                                    Toast.makeText(this, videoTitle + " Video deleted successfully", Toast.LENGTH_SHORT).show();
-                                                    fetchVideosFromFirestore(); // Refresh video list
-                                                })
-                                                .addOnFailureListener(e -> Toast.makeText(this, "Error deleting video document", Toast.LENGTH_SHORT).show());
-                                    })
-                                    .addOnFailureListener(e -> Toast.makeText(this, "Error deleting video file", Toast.LENGTH_SHORT).show());
-                        }
+                .addOnSuccessListener(snapshot -> {
+                    for (DocumentSnapshot doc : snapshot) {
+                        doc.getReference().delete();
                     }
+                    Toast.makeText(this, "Video deleted", Toast.LENGTH_SHORT).show();
+                    fetchVideosFromFirestoreOrdered(spinnerSort.getSelectedItem().toString().toLowerCase());
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Error fetching video", Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to delete video", Toast.LENGTH_SHORT).show());
     }
-
-
 }
