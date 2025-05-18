@@ -1,6 +1,7 @@
 package com.example.videosharinggood;
 
 import android.Manifest;
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -209,16 +210,15 @@ public class VideoActivity extends AppCompatActivity {
             return;
         }
 
-        String fileName = "videos/" + System.currentTimeMillis() + ".mp4";
+        String fileName = "videos/" + System.currentTimeMillis() + getFileExtension(videoUri);
         StorageReference videoRef = storageRef.child(fileName);
 
+        // Get the actual MIME type of the file
         String mimeType = getMimeType(videoUri);
-        if (!VIDEO_MIME_TYPE.equals(mimeType)) {
-            Toast.makeText(this, "Only MP4 videos are allowed", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
-        StorageMetadata metadata = new StorageMetadata.Builder().setContentType(mimeType).build();
+        StorageMetadata metadata = new StorageMetadata.Builder()
+                .setContentType(mimeType != null ? mimeType : "video/*")
+                .build();
 
         videoRef.putFile(videoUri, metadata)
                 .addOnProgressListener(snapshot -> {
@@ -236,6 +236,13 @@ public class VideoActivity extends AppCompatActivity {
                         Toast.makeText(this, "Upload failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    private String getFileExtension(Uri uri) {
+        ContentResolver contentResolver = getContentResolver();
+        MimeTypeMap mime = MimeTypeMap.getSingleton();
+        String extension = mime.getExtensionFromMimeType(contentResolver.getType(uri));
+        return extension != null ? "." + extension : ".mp4"; // default to .mp4 if unknown
     }
 
     private boolean validateInputs() {

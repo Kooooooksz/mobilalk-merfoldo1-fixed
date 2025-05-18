@@ -42,6 +42,12 @@
         android:text="Videó feltöltése"
         android:layout_marginTop="16dp" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Order by:"
+        android:textSize="16sp"
+        android:layout_marginBottom="4dp"/>
     <Spinner
         android:id="@+id/spinnerSort"
         android:layout_width="match_parent"

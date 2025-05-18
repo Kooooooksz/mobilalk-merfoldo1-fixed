@@ -5,6 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.VideoView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -12,13 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.videosharinggood.R;
 import com.example.videosharinggood.models.Video;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHolder> {
 
@@ -55,6 +50,21 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
         holder.uploadDateTextView.setText(video.getUploadDate());
         holder.uploaderTextView.setText(video.getUploaderUsername());
 
+        // Videó útvonal beállítása
+        holder.videoView.setVideoPath(video.getVideoUrl());
+
+        // Előnézethez az első képkockára állítjuk a videót
+        holder.videoView.seekTo(1);
+
+        // Kattintásra indítás/szüneteltetés
+        holder.videoView.setOnClickListener(v -> {
+            if (holder.videoView.isPlaying()) {
+                holder.videoView.pause();
+            } else {
+                holder.videoView.start();
+            }
+        });
+
         holder.editButton.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onEdit(video);
@@ -80,14 +90,14 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
         notifyDataSetChanged();
     }
 
-
-
     public static class VideoViewHolder extends RecyclerView.ViewHolder {
         TextView titleTextView, uploadDateTextView, uploaderTextView;
         Button editButton, deleteButton;
+        VideoView videoView;
 
         public VideoViewHolder(@NonNull View itemView) {
             super(itemView);
+            videoView = itemView.findViewById(R.id.videoPreview);
             titleTextView = itemView.findViewById(R.id.videoTitle);
             uploadDateTextView = itemView.findViewById(R.id.videoUploadDate);
             uploaderTextView = itemView.findViewById(R.id.videoUploader);
